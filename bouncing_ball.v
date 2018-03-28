@@ -41,30 +41,30 @@ module bouncing_ball(clock, reset, control, hor_pos, ver_pos);
         end else begin
             if (pulse) begin
                 if (up) begin
-                    ver_pos = ver_pos - 1;
-                end
-                if (down) begin
                     ver_pos = ver_pos + 1;
                 end
-                if (right) begin
-                    hor_pos = hor_pos + 1;
+                if (down) begin
+                    ver_pos = ver_pos - 1;
                 end
-                if (left) begin
+                if (right) begin
                     hor_pos = hor_pos - 1;
                 end
+                if (left) begin
+                    hor_pos = hor_pos + 1;
+                end
 
-                if (hor_pos < 0) begin
-                    hor_pos = HOR_FIELD - SIZE;
+                if (hor_pos <= 0) begin
+                    hor_pos = (HOR_FIELD - SIZE) - 1;
                 end
                 if (hor_pos + SIZE > HOR_FIELD) begin
-                    hor_pos = 0;
+                    hor_pos = 1;
                 end
 
-                if (ver_pos < 0) begin
-                    ver_pos = VER_FIELD - SIZE;
+                if (ver_pos <= 0) begin
+                    ver_pos = (VER_FIELD - SIZE) - 1;
                 end
                 if (ver_pos + SIZE > VER_FIELD) begin
-                    ver_pos = 0;
+                    ver_pos = 1;
                 end
             end
         end

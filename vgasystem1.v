@@ -1,6 +1,6 @@
 module vgasystem1(CLOCK_50, KEY, SW, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLOCK, VGA_SYNC_N, VGA_BLANK_N );
     input CLOCK_50;
-    input [8:0] KEY;
+    input [3:0] KEY;
     input [9:0] SW;
 
     output [7:0] VGA_R, VGA_G, VGA_B;
@@ -12,7 +12,7 @@ module vgasystem1(CLOCK_50, KEY, SW, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CL
 
     // assign clock = CLOCK_50;
     wire clock;
-    assign reset = ~KEY[8];
+    assign reset = SW[0];
     assign VGA_R = red;
     assign VGA_G = green;
     assign VGA_B = blue;
