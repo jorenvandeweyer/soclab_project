@@ -51,7 +51,7 @@ module vgasystem1(CLOCK_50, KEY, SW, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CL
     bouncing_ball #(.HOR_FIELD (1279),
                     .VER_FIELD (1023),
                     .SIZE(32) )
-                ball (clock, reset, {{wii_data[15:14]}, {wii_data[1:0]}}, hor_ball, ver_ball);
+                ball (clock, reset, /*{{wii_data[15:14]}, {wii_data[1:0]}}*/wii_data[45:42], wii_data[37:34], hor_ball, ver_ball);
 
     always @(posedge clock) begin
         if (reset) begin

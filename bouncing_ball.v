@@ -1,8 +1,8 @@
-module bouncing_ball(clock, reset, control, hor_pos, ver_pos);
+module bouncing_ball(clock, reset, x_axis, y_axis, hor_pos, ver_pos);
 
 	input clock;
 	input reset;
-    input [3:0] control;
+    input [3:0] x_axis, y_axis;
 
 	parameter HOR_FIELD = 799;
 	parameter VER_FIELD = 599;
@@ -13,11 +13,6 @@ module bouncing_ball(clock, reset, control, hor_pos, ver_pos);
 
 	reg [31:0] counter;
 	reg pulse;
-
-    assign up = control[0];
-    assign down = control[2];
-    assign left = control[1];
-    assign right = control[3];
 
 	always @(posedge clock) begin
 		if (reset) begin
@@ -40,27 +35,17 @@ module bouncing_ball(clock, reset, control, hor_pos, ver_pos);
             ver_pos = 0;
         end else begin
             if (pulse) begin
-                if (up) begin
-                    ver_pos = ver_pos + 1;
-                end
-                if (down) begin
-                    ver_pos = ver_pos - 1;
-                end
-                if (right) begin
-                    hor_pos = hor_pos - 1;
-                end
-                if (left) begin
-                    hor_pos = hor_pos + 1;
-                end
+                ver_pos = ver_pos - (y_axis - 7);
+                hor_pos = hor_pos + (x_axis - 8);
 
-                if (hor_pos <= 0) begin
+                if (hor_pos <= 1) begin
                     hor_pos = (HOR_FIELD - SIZE) - 1;
                 end
                 if (hor_pos + SIZE > HOR_FIELD) begin
                     hor_pos = 1;
                 end
 
-                if (ver_pos <= 0) begin
+                if (ver_pos <= 1) begin
                     ver_pos = (VER_FIELD - SIZE) - 1;
                 end
                 if (ver_pos + SIZE > VER_FIELD) begin
