@@ -14,10 +14,10 @@ module bouncing_ball(clock, reset, control, hor_pos, ver_pos);
 	reg [31:0] counter;
 	reg pulse;
 
-    assign up = control[3];
-    assign down = control[2];
-    assign left = control[1];
-    assign right = control[0];
+    assign up = !control[3];
+    assign down = !control[0];
+    assign left = !control[1];
+    assign right = !control[2];
 
 	always @(posedge clock) begin
 		if (reset) begin
@@ -69,5 +69,4 @@ module bouncing_ball(clock, reset, control, hor_pos, ver_pos);
             end
         end
     end
-
 endmodule

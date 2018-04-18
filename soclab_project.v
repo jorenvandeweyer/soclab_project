@@ -75,14 +75,88 @@ module soclab_project(
 //=======================================================
 //  REG/WIRE declarations
 //=======================================================
+wire mI2C_END;
+wire mI2C_ACK;
+wire reset;
+wire clk;
+wire stateCLK;
+wire [47:0] Received_data, Decoded_data;
+wire end_trans, ack_trans;
 
+reg [55:0] WII_DATA;
+reg [3:0] stateCounter;
+reg [3:0] WII_DATA_LENGTH;
+reg mI2C_READ;
+reg mI2C_GO;
+reg [0:47] Received_data_reg;
 
-
+//=======================================================
+//  declarations
+//=======================================================
+assign reset = !KEY[0];
+assign clk = (CLOCK_50);
 
 //=======================================================
 //  Structural coding
 //=======================================================
+I2C_Controller controller(.CLOCK(clk),					//	Controller Work Clock
+						.I2C_SCLK(GPIO[26]),		    //	I2C CLOCK
+ 	 	 	 	 	 	.I2C_SDAT(GPIO[27]),		    //	I2C DATA
+						.I2C_DATA(WII_DATA),			//	DATA:[SLAVE_ADDR,SUB_ADDR,DATA]
+						.I2C_LENGTH(WII_DATA_LENGTH),
+						.I2C_Received_data(Received_data),
+						.READ(mI2C_READ),
+						.GO(mI2C_GO),      			    //	GO transfor
+						.END(end_trans),				//	END transfor
+						.ACK(ack_trans),				//	ACK
+						.RESET(reset));
 
-vgasystem1 vgasystem(CLOCK_50, KEY, SW, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLK, VGA_SYNC_N, VGA_BLANK_N );
+counter u1(clk, reset, stateCLK);
+
+always@(posedge clk or posedge reset)
+begin
+	if (reset) begin
+		stateCounter<=0;
+		mI2C_GO <= 0; mI2C_READ <= 0;
+		WII_DATA <= 55'h000000000000;
+		WII_DATA_LENGTH <= 4'h0;
+		Received_data_reg <= 0;
+
+	end else
+		if (stateCLK == 1) begin
+			case (stateCounter)
+				//initialize controller: Send 0x4000 to device 0x52
+				0: begin WII_DATA <= 55'h524000; WII_DATA_LENGTH<=4'h2;	mI2C_GO <= 0; mI2C_READ <= 0;
+						 stateCounter<=stateCounter + 1;  end
+				1: begin mI2C_GO <= 1;
+						 stateCounter<=stateCounter + 1;  end
+				//Setup the Read pointer
+				2: begin WII_DATA <= 55'h5200; WII_DATA_LENGTH<=4'h1; mI2C_GO <= 0; mI2C_READ <= 0;
+						 stateCounter<=stateCounter + 1;  end
+				3: begin mI2C_GO <= 1;
+						 stateCounter<=stateCounter + 1;  end
+				//Read nunchuck messages (6 byte))
+				4: begin WII_DATA <= 55'h52000000000000; WII_DATA_LENGTH<=4'h6; mI2C_GO <= 0; mI2C_READ <= 1;
+						 stateCounter<=stateCounter + 1;  end
+				5: begin mI2C_GO <= 1;
+						 stateCounter<=stateCounter + 1;  end
+				//Save message in register
+				6: begin Received_data_reg	= Received_data;
+						 stateCounter<=stateCounter + 1;  end
+				7: begin mI2C_GO <= 1;
+						 stateCounter<=2;  end
+
+			endcase
+
+		end
+end
+
+decode_WII u2(
+	.clk(clk),
+	.reset(reset),
+	.I2C_data_coded(Received_data_reg),
+	.I2C_data_decoded(Decoded_data));
+
+vgasystem1 vgasystem(CLOCK_50, KEY, SW, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLK, VGA_SYNC_N, VGA_BLANK_N, Received_data );
 
 endmodule
