@@ -157,6 +157,6 @@ decode_WII u2(
 	.I2C_data_coded(Received_data_reg),
 	.I2C_data_decoded(Decoded_data));
 
-vgasystem1 vgasystem(CLOCK_50, KEY, SW, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLK, VGA_SYNC_N, VGA_BLANK_N, Received_data );
+vgasystem1 vgasystem(CLOCK_50, KEY, SW, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLK, VGA_SYNC_N, VGA_BLANK_N, Decoded_data );
 
 endmodule
