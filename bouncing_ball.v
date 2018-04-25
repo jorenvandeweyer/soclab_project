@@ -35,8 +35,8 @@ module bouncing_ball(clock, reset, x_axis, y_axis, hor_pos, ver_pos);
             ver_pos = 0;
         end else begin
             if (pulse) begin
-                ver_pos = ver_pos - (y_axis - 7);
-                hor_pos = hor_pos + (x_axis - 8);
+                ver_pos = ver_pos - (y_axis - 8);
+                hor_pos = hor_pos + (x_axis - 7);
 
                 if (hor_pos <= 1) begin
                     hor_pos = (HOR_FIELD - SIZE) - 1;
