@@ -1,4 +1,4 @@
-module ship (clock, reset, display_col, display_row, wii_data, ship_color);
+module ship (clock, reset, display_col, display_row, wii_data, ship_color, bullets);
 
     parameter HOR_FIELD = 799;
     parameter VER_FIELD = 599;
@@ -15,6 +15,7 @@ module ship (clock, reset, display_col, display_row, wii_data, ship_color);
     reg [10:0] ver_pos;
     reg [31:0] counter;
 	reg pulse;
+    reg [767:0] bullets;
 
     wire [3:0] x_axis;
     wire [3:0] y_axis;
@@ -75,7 +76,7 @@ module ship (clock, reset, display_col, display_row, wii_data, ship_color);
             ship_color = 24'b0;
         end else begin
             if (display_col >= hor_pos && display_col <= hor_pos + SIZE && display_row >= ver_pos && display_row <= ver_pos + SIZE) begin
-                if (address == 4'b1011) begin
+                if (color == 24'h808000) begin
                     ship_color = {{color}, {1'b0}};
                 end else begin
                     ship_color = {{color}, {1'b1}};
@@ -89,4 +90,6 @@ module ship (clock, reset, display_col, display_row, wii_data, ship_color);
     ship_image image(.address(address), .clock(clock), .q(color_address));
 
     colorpalette cp(.address(color_address), .clock(clock), .q(color));
+
+    bullets b(.clock(clock), .reset(reset), .bullets(bullets));
 endmodule

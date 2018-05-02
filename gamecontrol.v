@@ -1,16 +1,19 @@
-module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLOCK, VGA_SYNC_N, VGA_BLANK_N, wii_data);
+module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLOCK, VGA_SYNC_N, VGA_BLANK_N, wii_data, led);
 
     input CLOCK_50, reset;
     input [47:0] wii_data;
 
     output [7:0] VGA_R, VGA_G, VGA_B;
+    output reg [9:0] led;
     output VGA_CLOCK, VGA_SYNC_N;
     output reg VGA_HS, VGA_VS, VGA_BLANK_N;
+
+    reg [7:0] red, green, blue;
+    reg [767:0] bullets;
 
     wire clock;
     wire [24:0] ship_color;
     wire [7:0] VGA_R, VGA_G, VGA_B;
-    reg [7:0] red, green, blue;
 
     wire hsync, vsync, visible;
     wire [11:0] display_col; // column number of pixel on the screen
@@ -32,7 +35,7 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
     ship #(.HOR_FIELD (1279),
             .VER_FIELD (1023),
             .SIZE(64) )
-        ship(clock, reset, display_col, display_row, wii_data, ship_color);
+        ship(clock, reset, display_col, display_row, wii_data, ship_color, bullets);
 
     always @(posedge clock) begin
         if (reset) begin
@@ -44,9 +47,9 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
                     green = ship_color[16:9];
                     blue = ship_color[8:1];
                 end else begin
-                    red = {~3'b0, {5{display_row[7] ^ display_col[7]}}};
-                    green = {~3'b0, {5{display_row[7] ^ display_col[7]}}};
-                    blue = {~3'b0, {5{display_row[7] ^ display_col[7]}}};
+                    red = {3'b0, {5{display_row[7] ^ display_col[7]}}};
+                    green = {3'b0, {5{display_row[7] ^ display_col[7]}}};
+                    blue = {3'b0, {5{display_row[7] ^ display_col[7]}}};
                     //background
                 end
             end else begin

@@ -1,0 +1,17 @@
+Partition Merge Status : Successful - Wed May 02 16:04:26 2018
+Quartus Prime Version : 16.1.0 Build 196 10/24/2016 SJ Lite Edition
+Revision Name : soclab_project
+Top-level Entity Name : soclab_project
+Family : Cyclone V
+Logic utilization (in ALMs) : N/A
+Total registers : 293
+Total pins : 170
+Total virtual pins : 0
+Total block memory bits : 1,408
+Total DSP Blocks : 0
+Total HSSI RX PCSs : 0
+Total HSSI PMA RX Deserializers : 0
+Total HSSI TX PCSs : 0
+Total HSSI PMA TX Serializers : 0
+Total PLLs : 1
+Total DLLs : 0
