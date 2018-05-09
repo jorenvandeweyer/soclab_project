@@ -19,7 +19,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, bla
         if (reset) begin
             bullet_color = 24'b0;
         end else begin
-            if (display_col == bullet_read_data[12:1] && display_row == bullet_read_data[23:13]) begin
+            if (bullet_read_data[0] && display_col == bullet_read_data[12:1] && display_row == bullet_read_data[23:13]) begin
                 bullet_color = {{color}, {1'b1}};
             end else begin
                 bullet_color = 24'b0;
@@ -47,7 +47,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, bla
         if(reset) begin
             fire_bullet = 24'b0;
         end else begin
-            if (fire) begin
+            if (!fire) begin
                 fire_bullet = {{x_axis}, {y_axis}, {1'b1}};
             end else if (blank && !insert_value_in_array) begin
                 fire_bullet = 24'b0;
@@ -122,7 +122,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, bla
                         bullet_wren = 0;
                     end
                 end else if (insert_value_in_array && fire_bullet[0]) begin
-                    if (passed == 0) begin
+                    if (passed == 0 && insert_value != fire_bullet) begin
                         insert_value = fire_bullet;
                     end
 

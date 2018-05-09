@@ -8,9 +8,9 @@ let passed = 0;
 
 let switch_value;
 
-let array = [1, 0, 0, 2, 5, 0, 0, 7, 0];
+let array = [1, 1, 1, 1, 1, 1, 1, 1, 1];
 
-let insert_value = 3;
+let insert_value = 0;
 
 while (true) {
     if (clear_empty_spaces) {

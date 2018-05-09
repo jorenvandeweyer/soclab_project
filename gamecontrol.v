@@ -42,10 +42,14 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
             .display_row(display_row),
             .wii_data(wii_data),
             .ship_color(ship_color),
-            .hor_pos(ship_x),
-            .ver_pos(ship_y)
+            .hor_pos_out(ship_x),
+            .ver_pos_out(ship_y)
         );
 
+    always @(posedge clock) led[0] = wii_data[4];
+    always @(posedge clock) led[2] = (hsync & vsync);
+    always @(posedge clock) led[3] = reset;
+    
     bullets b(.clock(clock),
         .reset(reset),
         .fire(wii_data[4]),
@@ -66,7 +70,7 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
                     red = ship_color[24:17];
                     green = ship_color[16:9];
                     blue = ship_color[8:1];
-                end if (bullet_color[0]) begin
+                end else if (bullet_color[0]) begin
                     red = bullet_color[24:17];
                     green = bullet_color[16:9];
                     blue = bullet_color[8:1];
