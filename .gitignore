@@ -17,3 +17,4 @@
 *.sta.rpt
 *.sta.summary
 *.qws
+node_modules/

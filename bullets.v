@@ -1,68 +1,184 @@
-module bullets(clock, reset, bullets);
-
-    /*parameter AMOUNT = 32;
-    parameter SIZE = 24; //hor_pos + ver_pos + active = 12 + 11 + 1
-    parameter INDEX_SIZE = 5;*/
-
-    parameter SPEED = 2;
-    parameter DIMENSION = 10;
+module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, blank, bullet_color);
 
     input clock, reset;
+    input fire;
+    input [11:0] x_axis, display_col;
+    input [10:0] y_axis, display_row;
+    input blank;
 
-    output reg [767:0] bullets;//(AMOUNT * SIZE) - 1 aantal bits
+    output reg [24:0] bullet_color;
+
     reg [31:0] counter;
-    reg pulse;
-    reg [4:0] index;//iNDEX_SIZE - 1 aantal bits
+    reg new_clock;
+
+    wire [23:0] color;
+
+    colorpalette cp(.address(4'b0010), .clock(clock), .q(color));
 
     always @(posedge clock) begin
         if (reset) begin
-            counter = 0;
-            pulse = 0;
+            bullet_color = 24'b0;
         end else begin
-            if (counter[19] == 1'b1) begin
-                counter = 32'b0;
-                pulse = 1;
+            if (display_col == bullet_read_data[12:1] && display_row == bullet_read_data[23:13]) begin
+                bullet_color = {{color}, {1'b1}};
             end else begin
-                counter = counter + 1;
-                pulse = 0;
+                bullet_color = 24'b0;
             end
         end
     end
 
-    //Movement up
+    always @(posedge clock) begin
+        if (reset) begin
+            counter = 0;
+            new_clock = 0;
+        end else begin
+            if (counter[2] == 1'b1) begin
+                new_clock = 1;
+            end else begin
+                new_clock = 0;
+            end
+        end
+    end
+
+    reg [23:0] fire_bullet;
+
+    // Shoot bullet
     always @(posedge clock) begin
         if(reset) begin
-            bullets = 768'b0;
+            fire_bullet = 24'b0;
         end else begin
-            /*if(index >= 32) begin
-                index = 5'b0;
+            if (fire) begin
+                fire_bullet = {{x_axis}, {y_axis}, {1'b1}};
+            end else if (blank && !insert_value_in_array) begin
+                fire_bullet = 24'b0;
+            end
+        end
+    end
+
+    reg [23:0] bullet_write_data;
+    wire [23:0] bullet_read_data;
+    reg [5:0] bullet_read_address;
+    reg [5:0] bullet_write_address;
+    reg bullet_wren;
+
+    reg clear_empty_spaces;
+    reg insert_value_in_array;
+    reg move_bullets_state;
+
+    reg move;
+    reg clear;
+    reg passed;
+    reg [5:0] last_empty;
+    reg [23:0] switch_value;
+    reg [23:0] insert_value;
+
+    bullet_memory2 bm2 (.clock(clock),
+        .data(bullet_write_data),
+        .rdaddress(bullet_read_address),
+        .wraddress(bullet_write_address),
+        .wren(bullet_wren),
+        .q(bullet_read_data)
+    );
+
+    always @(posedge new_clock) begin
+        if (reset) begin
+            clear_empty_spaces = 1;
+            insert_value_in_array = 1;
+            move_bullets_state = 1;
+
+            move = 0;
+            clear = 0;
+            passed = 0;
+
+            last_empty = 5'b0;
+
+            switch_value = 24'b0;
+            insert_value = 24'b0;
+        end else begin
+            if (blank) begin
+                if (clear_empty_spaces) begin
+                    if (clear) begin
+                        clear = 0;
+                        bullet_wren = 1;
+                        bullet_write_data = 23'b0;
+                    end else if (bullet_read_data[0] != 0 && move) begin
+                        bullet_wren = 0;
+                        bullet_write_address = last_empty;
+                        clear = 1;
+                        last_empty = last_empty + 1;
+                    end else if (bullet_read_data[0] == 0 && !move) begin
+                        last_empty = bullet_read_address;
+                        move = 1;
+                        bullet_read_address = bullet_read_address + 1;
+                        passed = 1;
+                    end else begin
+                        bullet_read_address = bullet_read_address + 1;
+                        passed = 1;
+                    end
+
+                    if (passed && bullet_read_address == 0) begin
+                        clear_empty_spaces = 0;
+                        passed = 0;
+                        bullet_wren = 0;
+                    end
+                end else if (insert_value_in_array && fire_bullet[0]) begin
+                    if (passed == 0) begin
+                        insert_value = fire_bullet;
+                    end
+
+                    if (insert_value < bullet_read_data || bullet_read_data[0] == 0) begin
+                        bullet_write_data = insert_value;
+                        insert_value = bullet_read_data;
+                        bullet_wren = 1;
+                    end else begin
+                        bullet_wren = 0;
+                    end
+                    passed = 1;
+                    bullet_read_address = bullet_read_address + 1;
+
+                    if (passed && bullet_read_address == 0) begin
+                        insert_value_in_array = 0;
+                        passed = 0;
+                        bullet_wren = 0;
+                        insert_value = 0; // not sure voor zekerheid
+                    end
+                end else if (move_bullets_state) begin
+                    //MOVE BULLETS UP
+                    if (passed && bullet_read_address == 0) begin
+                        move_bullets_state = 0;
+                        passed = 0;
+                        bullet_wren = 0;
+                    end
+                end else begin
+                    //clear_empty_spaces == 0
+                    //insert_value_in_array == 0
+                    //move_bullets_state == 0
+                end
             end else begin
-                if(bullets[index * 24]) begin
-                    bullets[(index * 24) - 12:(index * 24) - 22] = bullets[(index * 24) - 12:(index * 24) - 22] - SPEED;
+                if (bullet_read_address == 0) begin
+                    clear_empty_spaces = 1;
+                    insert_value_in_array = 1;
+                    move_bullets_state = 1;
                 end
 
-                index = index + 1;
-            end*/
-
-            for(integer i = 23; i < 768; i = i + 24) begin
-                if(bullets[i]) begin
-                    bullets[i - 12:i-22] = bullets[i - 12:i-22] - SPEED;
+                if ({{display_row}, {display_col}, {1'b1}} > bullet_read_data) begin
+                    bullet_read_address = bullet_read_address + 1;
                 end
             end
         end
     end
 
     //Collision detection
-    always @(posedge clock) begin
-        if(reset) begin
-
-        end else begin
-            for(integer i = 23; i < 768; i = i + 24) begin
-                if(bullets[i - 12:i-22] <= 11'b0) begin
-                    bullets[i - 12:i-22] = ~11'b0;
-                end
-            end
-        end
-    end
+    // always @(posedge clock) begin
+    //     if(reset) begin
+    //
+    //     end else begin
+    //         for(integer i = 23; i < 768; i = i + 24) begin
+    //             if(bullets[i - 12:i-22] <= 11'b0) begin
+    //                 bullets[i - 12:i-22] = ~11'b0;
+    //             end
+    //         end
+    //     end
+    // end
 
 endmodule

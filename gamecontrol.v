@@ -9,15 +9,16 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
     output reg VGA_HS, VGA_VS, VGA_BLANK_N;
 
     reg [7:0] red, green, blue;
-    reg [767:0] bullets;
 
     wire clock;
-    wire [24:0] ship_color;
+    wire [24:0] ship_color, bullet_color;
     wire [7:0] VGA_R, VGA_G, VGA_B;
 
     wire hsync, vsync, visible;
     wire [11:0] display_col; // column number of pixel on the screen
     wire [10:0] display_row; // row number of pixel on the screen
+    wire [11:0] ship_x;
+    wire [10:0] ship_y;
 
     PLL100MHz u1 (.refclk(CLOCK_50), .rst(reset), .outclk_0(clock));
 
@@ -35,7 +36,26 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
     ship #(.HOR_FIELD (1279),
             .VER_FIELD (1023),
             .SIZE(64) )
-        ship(clock, reset, display_col, display_row, wii_data, ship_color, bullets);
+        ship(.clock(clock),
+            .reset(reset),
+            .display_col(display_col),
+            .display_row(display_row),
+            .wii_data(wii_data),
+            .ship_color(ship_color),
+            .hor_pos(ship_x),
+            .ver_pos(ship_y)
+        );
+
+    bullets b(.clock(clock),
+        .reset(reset),
+        .fire(wii_data[4]),
+        .x_axis(ship_x),
+        .y_axis(ship_y),
+        .display_col(display_col),
+        .display_row(display_row),
+        .blank(hsync & vsync),
+        .bullet_color(bullet_color)
+    );
 
     always @(posedge clock) begin
         if (reset) begin
@@ -46,6 +66,10 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
                     red = ship_color[24:17];
                     green = ship_color[16:9];
                     blue = ship_color[8:1];
+                end if (bullet_color[0]) begin
+                    red = bullet_color[24:17];
+                    green = bullet_color[16:9];
+                    blue = bullet_color[8:1];
                 end else begin
                     red = {3'b0, {5{display_row[7] ^ display_col[7]}}};
                     green = {3'b0, {5{display_row[7] ^ display_col[7]}}};
