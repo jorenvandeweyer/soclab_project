@@ -14,7 +14,7 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
     wire [24:0] ship_color, bullet_color;
     wire [7:0] VGA_R, VGA_G, VGA_B;
 
-    wire hsync, vsync, visible;
+    wire hsync, vsync, visible, calc;
     wire [11:0] display_col; // column number of pixel on the screen
     wire [10:0] display_row; // row number of pixel on the screen
     wire [11:0] ship_x;
@@ -30,7 +30,7 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
                         .VER_STR_SYNC(1024),
                         .VER_STP_SYNC(1027),
                         .VER_TOTAL (1065) )
-                    vga(clock, reset, display_col, display_row, visible, hsync, vsync);
+                    vga(clock, reset, display_col, display_row, visible, hsync, vsync, calc);
 
 
     ship #(.HOR_FIELD (1279),
@@ -49,7 +49,7 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
     always @(posedge clock) led[0] = wii_data[4];
     always @(posedge clock) led[2] = (hsync & vsync);
     always @(posedge clock) led[3] = reset;
-    
+
     bullets b(.clock(clock),
         .reset(reset),
         .fire(wii_data[4]),
@@ -57,7 +57,7 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
         .y_axis(ship_y),
         .display_col(display_col),
         .display_row(display_row),
-        .blank(hsync & vsync),
+        .calc(calc),
         .bullet_color(bullet_color)
     );
 

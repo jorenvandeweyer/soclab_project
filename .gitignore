@@ -18,3 +18,4 @@
 *.sta.summary
 *.qws
 node_modules/
+*.stp

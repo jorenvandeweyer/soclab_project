@@ -1,10 +1,10 @@
-module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, blank, bullet_color);
+module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, calc, bullet_color);
 
     input clock, reset;
     input fire;
     input [11:0] x_axis, display_col;
     input [10:0] y_axis, display_row;
-    input blank;
+    input calc;
 
     output reg [24:0] bullet_color;
 
@@ -32,6 +32,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, bla
             counter = 0;
             new_clock = 0;
         end else begin
+            counter = counter + 1;
             if (counter[2] == 1'b1) begin
                 new_clock = 1;
             end else begin
@@ -43,13 +44,13 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, bla
     reg [23:0] fire_bullet;
 
     // Shoot bullet
-    always @(posedge clock) begin
+    always @(posedge new_clock) begin
         if(reset) begin
             fire_bullet = 24'b0;
         end else begin
             if (!fire) begin
                 fire_bullet = {{x_axis}, {y_axis}, {1'b1}};
-            end else if (blank && !insert_value_in_array) begin
+            end else if (calc && !insert_value_in_array) begin
                 fire_bullet = 24'b0;
             end
         end
@@ -80,6 +81,25 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, bla
         .q(bullet_read_data)
     );
 
+    reg resetState;
+    reg calcWasZero;
+
+    always @(posedge new_clock) begin
+        if (reset) begin
+            resetState = 0;
+            calcWasZero = 0;
+        end else if (calc) begin
+            if (resetState) begin
+                resetState = 0;
+            end else if (calcWasZero) begin
+                resetState = 1;
+            end
+            calcWasZero = 0;
+        end else begin
+            calcWasZero = 1;
+        end
+    end
+
     always @(posedge new_clock) begin
         if (reset) begin
             clear_empty_spaces = 1;
@@ -94,19 +114,40 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, bla
 
             switch_value = 24'b0;
             insert_value = 24'b0;
+
+            bullet_read_address = 6'b0;
+            bullet_write_address = 6'b0;
+            bullet_wren = 0;
         end else begin
-            if (blank) begin
-                if (clear_empty_spaces) begin
+            if (calc) begin
+                if (resetState) begin
+                    clear_empty_spaces = 1;
+                    insert_value_in_array = 1;
+                    move_bullets_state = 1;
+
+                    move = 0;
+                    clear = 0;
+                    passed = 0;
+
+                    last_empty = 5'b0;
+
+                    switch_value = 24'b0;
+                    insert_value = 24'b0;
+
+                    bullet_read_address = 6'b0;
+                    bullet_write_address = 6'b0;
+                    bullet_wren = 0;
+                end else if (clear_empty_spaces) begin
                     if (clear) begin
                         clear = 0;
                         bullet_wren = 1;
                         bullet_write_data = 23'b0;
-                    end else if (bullet_read_data[0] != 0 && move) begin
+                    end else if (bullet_read_data[0] && move) begin
                         bullet_wren = 0;
                         bullet_write_address = last_empty;
                         clear = 1;
                         last_empty = last_empty + 1;
-                    end else if (bullet_read_data[0] == 0 && !move) begin
+                    end else if (!bullet_read_data[0] && !move) begin
                         last_empty = bullet_read_address;
                         move = 1;
                         bullet_read_address = bullet_read_address + 1;
@@ -116,51 +157,57 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, bla
                         passed = 1;
                     end
 
-                    if (passed && bullet_read_address == 0) begin
+                    if (passed && bullet_read_address == 6'b0) begin
                         clear_empty_spaces = 0;
                         passed = 0;
                         bullet_wren = 0;
                     end
                 end else if (insert_value_in_array && fire_bullet[0]) begin
-                    if (passed == 0 && insert_value != fire_bullet) begin
+                    if (!passed) begin
                         insert_value = fire_bullet;
                     end
 
-                    if (insert_value < bullet_read_data || bullet_read_data[0] == 0) begin
+                    if (insert_value < bullet_read_data || !bullet_read_data[0]) begin
                         bullet_write_data = insert_value;
+                        bullet_write_address = bullet_read_address;
                         insert_value = bullet_read_data;
                         bullet_wren = 1;
                     end else begin
                         bullet_wren = 0;
                     end
-                    passed = 1;
-                    bullet_read_address = bullet_read_address + 1;
 
-                    if (passed && bullet_read_address == 0) begin
+                    if (passed && bullet_read_address == 6'b0) begin
                         insert_value_in_array = 0;
                         passed = 0;
                         bullet_wren = 0;
-                        insert_value = 0; // not sure voor zekerheid
+                    end else begin
+                        passed = 1;
+                        bullet_read_address = bullet_read_address + 1;
                     end
+
                 end else if (move_bullets_state) begin
                     //MOVE BULLETS UP
-                    if (passed && bullet_read_address == 0) begin
+                    if (bullet_read_data[0]) begin
+                        bullet_write_data = {{bullet_read_data[23:12]}, {bullet_read_data[11:1] - 1}, {1'b1}};
+                        bullet_write_address = bullet_read_address;
+                        bullet_wren = 1;
+                    end else begin
+                        bullet_wren = 0;
+                    end
+
+                    if (passed && bullet_read_address == 6'b0) begin
                         move_bullets_state = 0;
                         passed = 0;
                         bullet_wren = 0;
+                    end else begin
+                        passed = 1;
+                        bullet_read_address = bullet_read_address + 1;
                     end
+
                 end else begin
-                    //clear_empty_spaces == 0
-                    //insert_value_in_array == 0
-                    //move_bullets_state == 0
+                    bullet_read_address = 0;
                 end
             end else begin
-                if (bullet_read_address == 0) begin
-                    clear_empty_spaces = 1;
-                    insert_value_in_array = 1;
-                    move_bullets_state = 1;
-                end
-
                 if ({{display_row}, {display_col}, {1'b1}} > bullet_read_data) begin
                     bullet_read_address = bullet_read_address + 1;
                 end
