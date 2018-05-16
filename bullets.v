@@ -1,10 +1,11 @@
-module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, calc, bullet_color);
+module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, calc, bullet_color, hardReset);
 
     input clock, reset;
     input fire;
     input [11:0] x_axis, display_col;
     input [10:0] y_axis, display_row;
     input calc;
+    input hardReset;
 
     output reg [24:0] bullet_color;
 
@@ -48,7 +49,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
             fire_bullet = 24'b0;
         end else begin
             if (!fire) begin
-                fire_bullet = {{x_axis}, {y_axis}, {1'b1}};
+                fire_bullet = {{y_axis}, {x_axis}, {1'b1}};
             end else if (calc && !insert_value_in_array) begin
                 fire_bullet = 24'b0;
             end
@@ -99,6 +100,8 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
         end
     end
 
+    reg hardResetStart;
+
     always @(posedge new_clock) begin
         if (reset) begin
             clear_empty_spaces = 1;
@@ -117,9 +120,25 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
             bullet_read_address = 6'b0;
             bullet_write_address = 6'b0;
             bullet_wren = 0;
+
+            hardResetStart = 1;
         end else begin
             if (calc) begin
-                if (resetState) begin
+                if (hardReset) begin
+                    if (hardResetStart) begin
+                        bullet_read_address = 0;
+                        hardResetStart = 0;
+                    end else if (passed && bullet_read_address == 6'b0) begin
+                        hardResetStart = 1;
+                        bullet_wren = 0;
+                    end else begin
+                        passed = 1;
+                        bullet_wren = 1;
+                        bullet_write_data = 24'b0;
+                        bullet_write_address = bullet_read_address;
+                        bullet_read_address = bullet_read_address + 1;
+                    end
+                end else if (resetState) begin
                     clear_empty_spaces = 1;
                     insert_value_in_array = 1;
                     move_bullets_state = 1;

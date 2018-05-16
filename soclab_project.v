@@ -158,5 +158,5 @@ decode_WII u2(
 	.I2C_data_coded(Received_data_reg),
 	.I2C_data_decoded(Decoded_data));
 
-gamecontrol gc (CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLK, VGA_SYNC_N, VGA_BLANK_N, Decoded_data, LEDR );
+gamecontrol gc (CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLK, VGA_SYNC_N, VGA_BLANK_N, Decoded_data, LEDR, SW[0]);
 endmodule

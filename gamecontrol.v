@@ -1,7 +1,8 @@
-module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLOCK, VGA_SYNC_N, VGA_BLANK_N, wii_data, led);
+module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLOCK, VGA_SYNC_N, VGA_BLANK_N, wii_data, led, switch);
 
     input CLOCK_50, reset;
     input [47:0] wii_data;
+    input switch;
 
     output [7:0] VGA_R, VGA_G, VGA_B;
     output reg [9:0] led;
@@ -58,7 +59,8 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
         .display_col(display_col),
         .display_row(display_row),
         .calc(calc),
-        .bullet_color(bullet_color)
+        .bullet_color(bullet_color),
+        .hardReset(switch)
     );
 
     always @(posedge clock) begin
