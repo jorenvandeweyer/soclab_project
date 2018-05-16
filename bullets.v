@@ -10,7 +10,6 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
 
     reg [31:0] counter;
     reg new_clock;
-
     wire [23:0] color;
 
     colorpalette cp(.address(4'b0010), .clock(clock), .q(color));
