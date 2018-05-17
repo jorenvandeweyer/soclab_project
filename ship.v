@@ -77,7 +77,7 @@ module ship (clock, reset, display_col, display_row, wii_data, ship_color, hor_p
 
     always @(posedge clock) begin
         if (reset) begin
-            ship_color = 24'b0;
+            ship_color = 25'b0;
         end else begin
             if (display_col >= hor_pos && display_col <= hor_pos + SIZE && display_row >= ver_pos && display_row <= ver_pos + SIZE) begin
                 if (color == 24'h808000) begin
@@ -86,7 +86,7 @@ module ship (clock, reset, display_col, display_row, wii_data, ship_color, hor_p
                     ship_color = {{color}, {1'b1}};
                 end
             end else begin
-                ship_color = 24'b0;
+                ship_color = 25'b0;
             end
         end
     end

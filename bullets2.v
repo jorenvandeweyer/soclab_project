@@ -1,7 +1,5 @@
 module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, calc, bullet_color, hardReset);
 
-    parameter SIZE = 32;
-
     input clock, reset;
     input fire;
     input [11:0] x_axis, display_col;
@@ -15,9 +13,19 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
     reg new_clock;
     wire [23:0] color;
 
-    wire [3:0]  address_ver, address_hor;
-    wire [7:0] address;
-    wire [3:0] color_address;
+    colorpalette cp(.address(4'b0010), .clock(clock), .q(color));
+
+    always @(posedge clock) begin
+        if (reset) begin
+            bullet_color = 24'b0;
+        end else begin
+            if (bullet_read_data[0] && bullet_read_data[23:13] == display_row && bullet_read_data[12:11] == display_col) begin
+                bullet_color = {{color}, {1'b1}};
+            end else begin
+                bullet_color = 24'b0;
+            end
+        end
+    end
 
     always @(posedge clock) begin
         if (reset) begin
@@ -54,15 +62,12 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
         end
     end
 
-    wire [23:0] bullet_read_data;
     reg [23:0] bullet_write_data;
+    wire [23:0] bullet_read_data;
     reg [5:0] bullet_read_address;
     reg [5:0] bullet_write_address;
     reg bullet_wren;
 
-    reg init;
-
-    reg resetState;
     reg clear_empty_spaces;
     reg insert_value_in_array;
     reg move_bullets_state;
@@ -70,6 +75,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
     reg move;
     reg clear;
     reg passed;
+    reg init;
     reg [5:0] last_empty;
     reg [23:0] insert_value;
 
@@ -81,9 +87,29 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
         .q(bullet_read_data)
     );
 
-    always @(posedge clock) begin
+    reg resetState;
+    reg calcWasZero;
+
+    always @(posedge new_clock) begin
         if (reset) begin
-            init = 1;
+            resetState = 0;
+            calcWasZero = 0;
+        end else if (calc) begin
+            if (resetState) begin
+                resetState = 0;
+            end else if (calcWasZero) begin
+                resetState = 1;
+            end
+            calcWasZero = 0;
+        end else begin
+            calcWasZero = 1;
+        end
+    end
+
+    reg hardResetStart;
+
+    always @(posedge new_clock) begin
+        if (reset) begin
             clear_empty_spaces = 1;
             insert_value_in_array = 1;
             move_bullets_state = 1;
@@ -91,28 +117,34 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
             move = 0;
             clear = 0;
             passed = 0;
+            init = 1;
 
-            last_empty = 6'b0;
+            last_empty = 5'b0;
 
             insert_value = 24'b0;
 
             bullet_read_address = 6'b0;
             bullet_write_address = 6'b0;
-            bullet_write_data = 24'b0;
             bullet_wren = 0;
+
+            hardResetStart = 1;
         end else begin
-            if (!calc) begin
-                if (init) begin
-                    bullet_read_address = 6'b0;
-                    init = 0;
-                end else begin
-                    if (bullet_read_data[0] && bullet_read_data[23:1] < {{display_row}, {display_col}}) begin
+            if (calc) begin
+                if (hardReset) begin
+                    if (hardResetStart && !passed) begin
+                        bullet_read_address = 0;
+                        hardResetStart = 0;
+                    end else if (passed && bullet_read_address == 6'b0) begin
+                        hardResetStart = 1;
+                        bullet_wren = 0;
+                    end else begin
+                        passed = 1;
+                        bullet_wren = 1;
+                        bullet_write_data = 24'b0;
+                        bullet_write_address = bullet_read_address;
                         bullet_read_address = bullet_read_address + 1;
                     end
-                end
-            end else begin
-                if(resetState) begin
-                    init = 1;
+                end else if (resetState) begin
                     clear_empty_spaces = 1;
                     insert_value_in_array = 1;
                     move_bullets_state = 1;
@@ -120,14 +152,14 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
                     move = 0;
                     clear = 0;
                     passed = 0;
+                    init = 1;
 
-                    last_empty = 6'b0;
+                    last_empty = 5'b0;
 
                     insert_value = 24'b0;
 
                     bullet_read_address = 6'b0;
                     bullet_write_address = 6'b0;
-                    bullet_write_data = 24'b0;
                     bullet_wren = 0;
                 end else if (clear_empty_spaces) begin
                     if (init) begin
@@ -202,32 +234,36 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
                 end else begin
                     bullet_read_address = 0;
                 end
-            end
-        end
-    end
-
-    assign address_ver = display_row[4:1] - bullet_read_data[16:13];
-    assign address_hor = display_col[4:1] - bullet_read_data[4:1];
-    assign address = {{address_ver}, {address_hor}};
-
-    always @(posedge clock) begin
-        if (reset) begin
-            bullet_color = 25'b0;
-        end else begin
-            if (bullet_read_data[0] && bullet_read_data[23:13] >= display_row && bullet_read_data[23:13] < display_row + SIZE && bullet_read_data[12:1] >= display_col && bullet_read_data[12:1] < display_col + SIZE) begin
-                if (color == 24'h808000) begin
-                    bullet_color = {{color}, {1'b0}};
-                end else begin
-                    bullet_color = {{color}, {1'b1}};
-                end
             end else begin
-                bullet_color = 25'b0;
+                if (init) begin
+                    init = 0;
+                    bullet_read_address = 0;
+                end else begin
+                    if ({{display_row}, {display_col}, {1'b1}} > bullet_read_data) begin
+                        bullet_read_address = bullet_read_address + 1;
+                    end
+
+                    if (!bullet_read_data[0]) begin
+
+                    end
+                end
+
+
             end
         end
     end
 
-    colorpalette cp(.address(color_address), .clock(clock), .q(color));
-
-    bullet_image image(.address(address), .clock(clock), .q(color_address));
+    //Collision detection
+    // always @(posedge clock) begin
+    //     if(reset) begin
+    //
+    //     end else begin
+    //         for(integer i = 23; i < 768; i = i + 24) begin
+    //             if(bullets[i - 12:i-22] <= 11'b0) begin
+    //                 bullets[i - 12:i-22] = ~11'b0;
+    //             end
+    //         end
+    //     end
+    // end
 
 endmodule

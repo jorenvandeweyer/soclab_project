@@ -77,9 +77,9 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
                     green = bullet_color[16:9];
                     blue = bullet_color[8:1];
                 end else begin
-                    red = {3'b0, {5{display_row[7] ^ display_col[7]}}};
-                    green = {3'b0, {5{display_row[7] ^ display_col[7]}}};
-                    blue = {3'b0, {5{display_row[7] ^ display_col[7]}}};
+                    red = {3'b011, {5{display_row[7] ^ display_col[7]}}};
+                    green = {3'b011, {5{display_row[7] ^ display_col[7]}}};
+                    blue = {3'b011, {5{display_row[7] ^ display_col[7]}}};
                     //background
                 end
             end else begin
