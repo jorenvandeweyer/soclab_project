@@ -63,7 +63,7 @@ async function getPixels(path) {
 }
 
 async function main() {
-    const pixels = await getPixels("image.png");
+    const pixels = await getPixels("bullet.png");
     // console.log(pixels);
     const depth = pixels.shape[2];
     const data = pixels.data;
