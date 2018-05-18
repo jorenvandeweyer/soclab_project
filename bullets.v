@@ -45,7 +45,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
                 if (fire_tick) begin
                     fire_tick = 0;
                     fire_bullet = {{y_axis}, {x_axis}, {1'b1}};
-                end else if (calc && !insert_value_in_array) begin
+                end else if (calc && state == insert_state && !init) begin
                     fire_bullet = 24'b0;
                 end
             end else begin
@@ -62,11 +62,6 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
 
     reg init;
 
-    reg resetState;
-    reg clear_empty_spaces;
-    reg insert_value_in_array;
-    reg move_bullets_state;
-
     reg move;
     reg clear;
     reg passed;
@@ -81,126 +76,164 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
         .q(bullet_read_data)
     );
 
-    always @(posedge clock) begin
+    reg resetState;
+    reg calcWasZero;
+
+    always @(posedge new_clock) begin
         if (reset) begin
-            init = 1;
-            clear_empty_spaces = 1;
-            insert_value_in_array = 1;
-            move_bullets_state = 1;
+            resetState <= 0;
+            calcWasZero <= 0;
+        end else if (calc) begin
+            if (resetState) begin
+                resetState = 0;
+                calcWasZero = 1;
+            end else begin
+                calcWasZero = 0;
+            end
+        end else begin
+            resetState = 1;
+        end
+    end
 
-            move = 0;
-            clear = 0;
-            passed = 0;
+    parameter clean_state = 0, insert_state = 1, move_state = 2, idle = 3;
 
-            last_empty = 6'b0;
+    reg [1:0] state;
 
-            insert_value = 24'b0;
+    always @(posedge new_clock) begin
+        if (reset) begin
+            init <= 1;
+            state <= clean_state;
 
-            bullet_read_address = 6'b0;
-            bullet_write_address = 6'b0;
-            bullet_write_data = 24'b0;
-            bullet_wren = 0;
+            passed <= 0;
+            move <= 0;
+            clear <= 0;
+
+            last_empty <= 6'b0;
+
+            insert_value <= 24'b0;
+
+            bullet_read_address <= 6'b0;
+            bullet_write_address <= 6'b0;
+            bullet_write_data <= 24'b0;
+            bullet_wren <= 0;
         end else begin
             if (!calc) begin
                 if (init) begin
-                    bullet_read_address = 6'b0;
-                    init = 0;
+                    bullet_read_address <= 6'b0;
+                    init <= 0;
                 end else begin
                     if (bullet_read_data[0] && bullet_read_data[23:1] < {{display_row}, {display_col}}) begin
-                        bullet_read_address = bullet_read_address + 1;
+                        bullet_read_address <= bullet_read_address + 1;
                     end
                 end
             end else begin
-                if(resetState) begin
+                if (calcWasZero) begin
                     init = 1;
-                    clear_empty_spaces = 1;
-                    insert_value_in_array = 1;
-                    move_bullets_state = 1;
-
-                    move = 0;
-                    clear = 0;
-                    passed = 0;
-
-                    last_empty = 6'b0;
-
-                    insert_value = 24'b0;
-
-                    bullet_read_address = 6'b0;
-                    bullet_write_address = 6'b0;
-                    bullet_write_data = 24'b0;
-                    bullet_wren = 0;
-                end else if (clear_empty_spaces) begin
-                    if (init) begin
-                        init = 0;
-                    end else begin
-                        if (clear) begin
-                            bullet_wren = 1;
-                            bullet_write_data = 24'b0;
-                            clear = 0;
-                        end else if (bullet_read_data[0] && move) begin
-                            bullet_write_address = last_empty;
-                            bullet_write_data = bullet_read_data;
-                            bullet_wren = 1;
-                            last_empty = last_empty + 1;
-                        end else if (!bullet_read_data[0] && !move) begin
-                            move = 1;
-                            last_empty = bullet_read_address;
-                            bullet_read_address = bullet_read_address + 1;
-                        end else begin
-                            bullet_read_address = bullet_read_address + 1;
-                        end
-
-                        if (bullet_read_address == 6'b0) begin
-                            init = 1;
-                            bullet_wren = 0;
-                            clear_empty_spaces = 0;
-                        end
-                    end
-                end else if (insert_value_in_array && fire_bullet[0]) begin
-                    if (init) begin
-                        insert_value = fire_bullet;
-                        init = 0;
-                    end else begin
-                        if (insert_value[0] && insert_value < bullet_read_data || !bullet_read_data[0]) begin
-                            bullet_write_data = insert_value;
-                            bullet_write_address = bullet_read_address;
-                            insert_value = bullet_read_data;
-                            bullet_wren = 1;
-                        end else begin
-                            bullet_wren = 0;
-                        end
-
-                        bullet_read_address = bullet_read_address + 1;
-
-                        if (bullet_read_address == 6'b0) begin
-                            init = 1;
-                            bullet_wren = 0;
-                            insert_value_in_array = 0;
-                        end
-                    end
-                end else if (move_bullets_state) begin
-                    if (init) begin
-                        init = 0;
-                    end else begin
-                        if (bullet_read_data[0]) begin
-                            // {
-                            bullet_write_data = bullet_read_data + 2;
-                            bullet_write_address = bullet_read_address;
-                            bullet_wren = 1;
-                        end else begin
-                            bullet_wren = 0;
-                        end
-
-                        bullet_read_address = bullet_read_address + 1;
-
-                        if (bullet_read_address == 6'b0) begin
-                            init = 1;
-                            bullet_wren = 0;
-                            move_bullets_state = 0;
-                        end
-                    end
+                    state <= clean_state;
+                    bullet_read_address <= 6'b0;
                 end else begin
-                    bullet_read_address = 0;
+                    case (state)
+                        clean_state:
+                            begin
+                                if (init) begin
+                                    bullet_read_address <= 0;
+                                    init <= 0;
+                                    passed <= 0;
+                                    bullet_wren <= 0;
+                                    clear <= 0;
+                                    move <= 0;
+                                    bullet_write_address <= 6'b0;
+                                    bullet_write_data <= 24'b0;
+                                    last_empty <= 6'b0;
+                                end else begin
+                                    if (clear) begin
+                                        bullet_wren <= 1;
+                                        bullet_write_data <= 24'b0;
+                                        bullet_write_address <= bullet_read_address;
+                                        clear <= 0;
+                                    end else if (bullet_read_data[0] && move) begin
+                                        bullet_write_address <= last_empty;
+                                        bullet_write_data <= bullet_read_data;
+                                        bullet_wren <= 1;
+                                        last_empty <= last_empty + 1;
+                                        clear <= 1;
+                                    end else if (!bullet_read_data[0] && !move) begin
+                                        bullet_wren <= 0;
+                                        move <= 1;
+                                        last_empty <= bullet_read_address;
+                                        bullet_read_address <= bullet_read_address + 1;
+                                    end else begin
+                                        bullet_read_address <= bullet_read_address + 1;
+                                        bullet_wren <= 0;
+                                    end
+
+                                    if (bullet_read_address == 6'b0 && passed) begin
+                                        init <= 1;
+                                        bullet_wren <= 0;
+                                        state <= insert_state;
+                                    end
+                                    passed = 1;
+                                end
+                            end
+                        insert_state:
+                            begin
+                                if (init) begin
+                                    if (fire_bullet[0]) begin
+                                        init <= 0;
+                                        insert_value <= fire_bullet;
+                                        bullet_read_address <= 0;
+                                        passed = 0;
+                                    end else begin
+                                        state <= move_state;
+                                    end
+                                end else begin
+                                    if (insert_value[0] && insert_value < bullet_read_data || !bullet_read_data[0]) begin
+                                        bullet_write_data <= insert_value;
+                                        bullet_write_address <= bullet_read_address;
+                                        insert_value <= bullet_read_data;
+                                        bullet_wren <= 1;
+                                    end else begin
+                                        bullet_wren <= 0;
+                                    end
+
+                                    bullet_read_address <= bullet_read_address + 1;
+
+                                    if (bullet_read_address == 6'b0 && passed) begin
+                                        init <= 1;
+                                        bullet_wren <= 0;
+                                        state <= move_state;
+                                    end
+                                    passed = 1;
+                                end
+                            end
+                        move_state:
+                            begin
+                                if (init) begin
+                                    init <= 0;
+                                    bullet_read_address <= 0;
+                                    passed <= 0;
+                                end else begin
+                                    if (bullet_read_data[0]) begin
+                                        bullet_write_data <= bullet_read_data + 2;
+                                        bullet_write_address <= bullet_read_address;
+                                        bullet_wren <= 1;
+                                    end else begin
+                                        bullet_wren <= 0;
+                                    end
+
+                                    bullet_read_address <= bullet_read_address + 1;
+
+                                    if (bullet_read_address == 6'b0 && passed) begin
+                                        init <= 1;
+                                        bullet_wren <= 0;
+                                        state <= idle;
+                                    end
+
+                                    passed = 1;
+                                end
+                            end
+                        default: state = idle;
+                    endcase
                 end
             end
         end
