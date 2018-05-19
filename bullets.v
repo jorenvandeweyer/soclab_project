@@ -1,6 +1,7 @@
 module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, calc, bullet_color, hardReset);
 
     parameter SIZE = 32;
+    parameter SPEED = 8;
 
     input clock, reset;
     input fire;
@@ -214,7 +215,11 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
                                     passed <= 0;
                                 end else begin
                                     if (bullet_read_data[0]) begin
-                                        bullet_write_data <= bullet_read_data + 2;
+                                        if (bullet_read_data[23:13] - SPEED < bullet_read_data[23:13]) begin
+                                            bullet_write_data <= {{bullet_read_data[23:13] - SPEED}, {bullet_read_data[12:1]}, {1'b1}};
+                                        end else begin
+                                            bullet_write_data <= 24'b0;
+                                        end
                                         bullet_write_address <= bullet_read_address;
                                         bullet_wren <= 1;
                                     end else begin
@@ -239,8 +244,8 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
         end
     end
 
-    assign address_ver = display_row[4:1] - bullet_read_data[16:13];
-    assign address_hor = display_col[4:1] - bullet_read_data[4:1];
+    assign address_ver = display_row[4:1] - bullet_read_data[17:14];
+    assign address_hor = display_col[4:1] - bullet_read_data[5:2];
     assign address = {{address_ver}, {address_hor}};
 
     always @(posedge clock) begin
