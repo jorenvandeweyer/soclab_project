@@ -1,4 +1,4 @@
-module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, calc, bullet_color, hardReset);
+module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, calc, bullet_color);
 
     parameter SIZE = 32;
     parameter SPEED = 8;
@@ -8,7 +8,6 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
     input [11:0] x_axis, display_col;
     input [10:0] y_axis, display_row;
     input calc;
-    input hardReset;
 
     output reg [24:0] bullet_color;
 

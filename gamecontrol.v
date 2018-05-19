@@ -59,8 +59,7 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
         .display_col(display_col),
         .display_row(display_row),
         .calc(calc),
-        .bullet_color(bullet_color),
-        .hardReset(switch)
+        .bullet_color(bullet_color)
     );
 
     always @(posedge clock) begin
