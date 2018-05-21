@@ -21,6 +21,8 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
     wire [11:0] ship_x;
     wire [10:0] ship_y;
 
+    reg hit;
+
     PLL100MHz u1 (.refclk(CLOCK_50), .rst(reset), .outclk_0(clock));
 
     vga_controller #(.HOR_FIELD (1279),
@@ -55,7 +57,8 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
         .display_col(display_col),
         .display_row(display_row),
         .calc(calc),
-        .bullet_color(bullet_color)
+        .bullet_color(bullet_color),
+        .hit(hit)
     );
 
     enemies e(.clock(clock),
@@ -64,7 +67,27 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
         .display_row(display_row),
         .calc(calc),
         .enemy_color(enemy_color),
+        .hit(hit)
     );
+
+    wire [1:32] lfsr_out;
+
+    lfsr lfsr(.clock(clock),
+        .reset(reset),
+        .out(lfsr_out)
+    );
+
+    always @(posedge clock) begin
+        if (reset) begin
+            hit <= 0;
+        end else begin
+            if (bullet_color[0] && enemy_color[0]) begin
+                hit <= 1;
+            end else begin
+                hit <= 0;
+            end
+        end
+    end
 
     always @(posedge clock) begin
         if (reset) begin
@@ -84,10 +107,19 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
                     green = bullet_color[16:9];
                     blue = bullet_color[8:1];
                 end else begin
-                    red = {3'b011, {5{display_row[7] ^ display_col[7]}}};
-                    green = {3'b011, {5{display_row[7] ^ display_col[7]}}};
-                    blue = {3'b011, {5{display_row[7] ^ display_col[7]}}};
-                    //background
+                    if (lfsr_out[15] && lfsr_out[13] && lfsr_out[11] && lfsr_out[9] && lfsr_out[7] && lfsr_out[1:3] == 3'b111) begin
+                        red = ~8'b0;
+                        green = 8'b0;
+                        blue = 8'b0;
+                    end else if (lfsr_out [10] && lfsr_out[1:6] == 6'b111111) begin
+                        red = ~8'b0;
+                        green = ~8'b0;
+                        blue = ~8'b0;
+                    end else begin
+                        red = 0;
+                        green = 0;
+                        blue = 0;
+                    end
                 end
             end else begin
                 red = 0;
