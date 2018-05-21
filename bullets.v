@@ -21,14 +21,14 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
 
     always @(posedge clock) begin
         if (reset) begin
-            counter = 0;
-            new_clock = 0;
+            counter <= 0;
+            new_clock <= 0;
         end else begin
-            counter = counter + 1;
+            counter <= counter + 1;
             if (counter[2] == 1'b1) begin
-                new_clock = 1;
+                new_clock <= 1;
             end else begin
-                new_clock = 0;
+                new_clock <= 0;
             end
         end
     end
@@ -38,18 +38,18 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
     // Shoot bullet
     always @(posedge new_clock) begin
         if(reset) begin
-            fire_bullet = 24'b0;
-            fire_tick = 1;
+            fire_bullet <= 24'b0;
+            fire_tick <= 1;
         end else begin
             if (!fire) begin
                 if (fire_tick) begin
-                    fire_tick = 0;
-                    fire_bullet = {{y_axis}, {x_axis}, {1'b1}};
+                    fire_tick <= 0;
+                    fire_bullet <= {{y_axis}, {x_axis}, {1'b1}};
                 end else if (calc && state == insert_state && !init) begin
-                    fire_bullet = 24'b0;
+                    fire_bullet <= 24'b0;
                 end
             end else begin
-                fire_tick = 1;
+                fire_tick <= 1;
             end
         end
     end
@@ -85,13 +85,13 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
             calcWasZero <= 0;
         end else if (calc) begin
             if (resetState) begin
-                resetState = 0;
-                calcWasZero = 1;
+                resetState <= 0;
+                calcWasZero <= 1;
             end else begin
-                calcWasZero = 0;
+                calcWasZero <= 0;
             end
         end else begin
-            resetState = 1;
+            resetState <= 1;
         end
     end
 
@@ -236,7 +236,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
                                     passed = 1;
                                 end
                             end
-                        default: state = idle;
+                        default: state <= idle;
                     endcase
                 end
             end
@@ -249,16 +249,16 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
 
     always @(posedge clock) begin
         if (reset) begin
-            bullet_color = 25'b0;
+            bullet_color <= 25'b0;
         end else begin
             if (bullet_read_data[0] && bullet_read_data[23:13] >= display_row && bullet_read_data[23:13] < display_row + SIZE && bullet_read_data[12:1] >= display_col && bullet_read_data[12:1] < display_col + SIZE) begin
                 if (color == 24'h808000) begin
-                    bullet_color = {{color}, {1'b0}};
+                    bullet_color< = {{color}, {1'b0}};
                 end else begin
-                    bullet_color = {{color}, {1'b1}};
+                    bullet_color <= {{color}, {1'b1}};
                 end
             end else begin
-                bullet_color = 25'b0;
+                bullet_color <= 25'b0;
             end
         end
     end

@@ -12,7 +12,7 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
     reg [7:0] red, green, blue;
 
     wire clock;
-    wire [24:0] ship_color, bullet_color;
+    wire [24:0] ship_color, bullet_color, enemy_color;
     wire [7:0] VGA_R, VGA_G, VGA_B;
 
     wire hsync, vsync, visible, calc;
@@ -47,10 +47,6 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
             .ver_pos_out(ship_y)
         );
 
-    always @(posedge clock) led[0] = wii_data[4];
-    always @(posedge clock) led[2] = (hsync & vsync);
-    always @(posedge clock) led[3] = reset;
-
     bullets b(.clock(clock),
         .reset(reset),
         .fire(wii_data[4]),
@@ -62,6 +58,14 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
         .bullet_color(bullet_color)
     );
 
+    enemies e(.clock(clock),
+        .reset(reset),
+        .display_col(display_col),
+        .display_row(display_row),
+        .calc(calc),
+        .enemy_color(enemy_color),
+    );
+
     always @(posedge clock) begin
         if (reset) begin
             red = 0; green = 0; blue = 0;
@@ -71,6 +75,10 @@ module gamecontrol(CLOCK_50, reset, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_CLO
                     red = ship_color[24:17];
                     green = ship_color[16:9];
                     blue = ship_color[8:1];
+                end else if (enemy_color[0]) begin
+                    red = enemy_color[24:17];
+                    green = enemy_color[16:9];
+                    blue = enemy_color[8:1];
                 end else if (bullet_color[0]) begin
                     red = bullet_color[24:17];
                     green = bullet_color[16:9];
