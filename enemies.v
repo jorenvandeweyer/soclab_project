@@ -1,4 +1,4 @@
-module enemies(clock, reset, display_col, display_row, calc, enemy_color);
+module enemies(clock, reset, display_col, display_row, calc, enemy_color, hit);
 
     parameter SIZE = 64;
 
@@ -8,6 +8,7 @@ module enemies(clock, reset, display_col, display_row, calc, enemy_color);
     input [10:0] display_row;
 
     input calc;
+    input hit;
 
     output reg [24:0] enemy_color;
 
@@ -85,6 +86,13 @@ module enemies(clock, reset, display_col, display_row, calc, enemy_color);
 
     reg [2:0] state;
 
+    wire [1:32] lfsr_out;
+
+    lfsr lfsr(.clock(clock),
+        .reset(reset),
+        .out(lfsr_out)
+    );
+
     parameter clean_state = 0, create_state = 1, move_state = 2, shoot_state = 3, idle = 4;
 
     always @(posedge new_clock) begin
@@ -101,6 +109,14 @@ module enemies(clock, reset, display_col, display_row, calc, enemy_color);
                     if (enemy_read_data[0] && enemy_read_data[23:1] <  {{display_row}, {display_col}}) begin
                         enemy_read_address <= enemy_read_address + 1;
                     end
+
+                    // if (hit) begin
+                    //     enemy_write_address <= enemy_read_address;
+                    //     enemy_write_data <= 24'b0;
+                    //     enemy_wren <= 1;
+                    // end else begin
+                    //     enemy_wren <= 0;
+                    // end
                 end
             end else begin
                 if (calcWasZero) begin
@@ -153,7 +169,34 @@ module enemies(clock, reset, display_col, display_row, calc, enemy_color);
                             end
                         create_state:
                             begin
-                                state <= move_state;
+                                if (init) begin
+                                    if (create_enemy) begin
+                                        init <= 0;
+                                        enemy_wren <= 0;
+                                        insert_value <= {{11'h080}, {lfsr_out[1:12]}, {1'b1}};
+                                        passed = 0;
+                                    end else begin
+                                        state <= move_state;
+                                    end
+                                end else begin
+                                    if (insert_value[0] && insert_value < enemy_read_data || !enemy_read_data[0]) begin
+                                        enemy_write_data <= insert_value;
+                                        insert_value <= enemy_read_data;
+                                        enemy_write_address <= enemy_read_address;
+                                        enemy_wren <= 1;
+                                    end else begin
+                                        enemy_wren <= 0;
+                                    end
+
+                                    enemy_read_address <= enemy_read_address + 1;
+
+                                    if (enemy_read_address == 6'b0 && passed) begin
+                                        init <= 1;
+                                        enemy_wren <= 0;
+                                        state <= move_state;
+                                    end
+                                    passed = 1;
+                                end
                             end
                         move_state:
                             begin

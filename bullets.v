@@ -1,4 +1,4 @@
-module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, calc, bullet_color);
+module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, calc, bullet_color, hit);
 
     parameter SIZE = 32;
     parameter SPEED = 8;
@@ -8,6 +8,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
     input [11:0] x_axis, display_col;
     input [10:0] y_axis, display_row;
     input calc;
+    input hit;
 
     output reg [24:0] bullet_color;
 
@@ -124,6 +125,14 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
                 end else begin
                     if (bullet_read_data[0] && bullet_read_data[23:1] < {{display_row}, {display_col}}) begin
                         bullet_read_address <= bullet_read_address + 1;
+                    end
+
+                    if (hit) begin
+                        bullet_write_address <= bullet_read_address;
+                        bullet_write_data <= 24'b0;
+                        bullet_wren <= 1;
+                    end else begin
+                        bullet_wren <= 0;
                     end
                 end
             end else begin
