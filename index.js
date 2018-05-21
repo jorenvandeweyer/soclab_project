@@ -72,7 +72,7 @@ async function main() {
         if (data[i+3] > 0) {
             address = lookUpColorAddress(data[i], data[i+1], data[i+2]);
         } else {
-            address = 11;
+            address = "808000";
         }
         console.log(`${i/4}\t:\t${address};`);
     }
@@ -80,7 +80,8 @@ async function main() {
 
 function lookUpColorAddress(red, green, blue) {
     const hex_color = hexCheck(red.toString(16)) + hexCheck(green.toString(16)) + hexCheck(blue.toString(16));
-    return Colors[hex_color.toUpperCase()].address;
+    return hex_color.toUpperCase();
+    // return Colors[hex_color.toUpperCase()].address;
 }
 
 function hexCheck(hex) {

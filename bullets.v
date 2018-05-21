@@ -253,7 +253,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
         end else begin
             if (bullet_read_data[0] && bullet_read_data[23:13] >= display_row && bullet_read_data[23:13] < display_row + SIZE && bullet_read_data[12:1] >= display_col && bullet_read_data[12:1] < display_col + SIZE) begin
                 if (color == 24'h808000) begin
-                    bullet_color< = {{color}, {1'b0}};
+                    bullet_color <= {{color}, {1'b0}};
                 end else begin
                     bullet_color <= {{color}, {1'b1}};
                 end
