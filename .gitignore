@@ -1,3 +1,4 @@
+I2C_Controller.v
 *.bak
 **/db
 **/incremental_db
