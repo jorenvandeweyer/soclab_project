@@ -6,7 +6,7 @@ JedecChain;
 	P ActionCode(Ign)
 		Device PartName(SOCVHPS) MfrSpec(OpMask(0));
 	P ActionCode(Cfg)
-		Device PartName(5CSEMA5F31) Path("D:/repos/soclab_project/") File("soclab_project.sof") MfrSpec(OpMask(1));
+		Device PartName(5CSEMA5F31) Path("C:/Users/alles/OneDrive/Documents/SCHOOL/SOCLAB/Project/Code/soclab_project/") File("soclab_project.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 

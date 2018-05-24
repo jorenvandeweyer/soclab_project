@@ -45,7 +45,7 @@ module bullets(clock, reset, fire, x_axis, y_axis, display_col, display_row, cal
             if (!fire) begin
                 if (fire_tick) begin
                     fire_tick <= 0;
-                    fire_bullet <= {{y_axis}, {x_axis}, {1'b1}};
+                    fire_bullet <= {{y_axis}, {x_axis + 6'b110000}, {1'b1}};
                 end else if (calc && state == insert_state && !init) begin
                     fire_bullet <= 24'b0;
                 end
