@@ -40,7 +40,7 @@ module enemies(clock, reset, display_col, display_row, calc, enemy_color, hit);
         if (reset) begin
             create_enemy <= 0;
         end else begin
-            if (counter[27] && counter_down && state == create_state) begin
+            if (counter[27] && counter_down && state <= create_state) begin//(counter[27] && counter_down && state == create_state) begin
                 create_enemy <= 1;
                 counter_down <= 0;
             end else if (!counter[27]) begin
@@ -94,6 +94,7 @@ module enemies(clock, reset, display_col, display_row, calc, enemy_color, hit);
     );
 
     parameter clean_state = 0, create_state = 1, move_state = 2, shoot_state = 3, idle = 4;
+    reg creating_enemy;
 
     always @(posedge new_clock) begin
         if (reset) begin
@@ -106,7 +107,7 @@ module enemies(clock, reset, display_col, display_row, calc, enemy_color, hit);
                     enemy_read_address <= 6'b0;
                     init <= 0;
                 end else begin
-                    if (enemy_read_data[0] && enemy_read_data[23:1] <  {{display_row}, {display_col}}) begin
+                    if (enemy_read_data[0] && enemy_read_data[23:1] < {{display_row}, {display_col}}) begin
                         enemy_read_address <= enemy_read_address + 1;
                     end
 
@@ -170,32 +171,37 @@ module enemies(clock, reset, display_col, display_row, calc, enemy_color, hit);
                         create_state:
                             begin
                                 if (init) begin
-                                    if (create_enemy) begin
-                                        init <= 0;
-                                        enemy_wren <= 0;
-                                        insert_value <= {{11'h080}, {lfsr_out[1:12]}, {1'b1}};
-                                        passed = 0;
-                                    end else begin
-                                        state <= move_state;
-                                    end
+                                    init <= 0;
+                                    enemy_wren <= 0;
+                                    passed = 0;
+                                    creating_enemy <= 0;
                                 end else begin
-                                    if (insert_value[0] && insert_value < enemy_read_data || !enemy_read_data[0]) begin
-                                        enemy_write_data <= insert_value;
-                                        insert_value <= enemy_read_data;
-                                        enemy_write_address <= enemy_read_address;
-                                        enemy_wren <= 1;
+                                    if (create_enemy || creating_enemy) begin
+                                        if (create_enemy) begin
+                                            insert_value <= {{11'h080}, {lfsr_out[1:12]}, {1'b1}};
+                                            creating_enemy <= 1;
+                                        end else begin
+                                            if (insert_value[0] && insert_value < enemy_read_data || !enemy_read_data[0]) begin
+                                                enemy_write_data <= insert_value;
+                                                insert_value <= enemy_read_data;
+                                                enemy_write_address <= enemy_read_address;
+                                                enemy_wren <= 1;
+                                            end else begin
+                                                enemy_wren <= 0;
+                                            end
+
+                                            enemy_read_address <= enemy_read_address + 1;
+
+                                            if (enemy_read_address == 6'b0 && passed) begin
+                                                init <= 1;
+                                                enemy_wren <= 0;
+                                                state <= move_state;
+                                            end
+                                            passed = 1;
+                                        end
                                     end else begin
-                                        enemy_wren <= 0;
-                                    end
-
-                                    enemy_read_address <= enemy_read_address + 1;
-
-                                    if (enemy_read_address == 6'b0 && passed) begin
-                                        init <= 1;
-                                        enemy_wren <= 0;
                                         state <= move_state;
                                     end
-                                    passed = 1;
                                 end
                             end
                         move_state:
